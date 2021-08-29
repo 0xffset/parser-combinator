@@ -176,7 +176,7 @@ pub fn spaces() -> Parser<String> {
     return map(many(string(" ")), |s: Vec<String>| Ok(s.join("")));
 }
 
-fn letters() -> Parser<String> {
+pub fn letters() -> Parser<String> {
     return regex("[a-zA-Z]+", "letters");
 }
 
