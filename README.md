@@ -12,13 +12,13 @@ README is subject to change.
 let res = parse(
 	"Hello World",
 	map(
-		sequence!(string("Hello"), spaces(), string("World")),
-		|r| Ok((r.0, r.1 .0, r.1 .1)),
+		sequence(vec![string("Hello"), spaces(), string("World")]),
+		|r| Ok(vec![r.join("")]),
 	),
 );
 
 assert_eq!(
-	res.unwrap(),
-	("Hello".to_string(), " ".to_string(), "World".to_string())
+	res.unwrap().val,
+	vec!["Hello World".to_string()]
 );
 ```
