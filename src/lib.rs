@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+#![allow(unused_macros)]
 
 use crate::string_utils::StringUtils;
 use regex::Regex;
@@ -13,27 +13,48 @@ pub struct Context {
     pub pos: usize,
 }
 
+/// `Success` is a successful parse result
+/// * `val` holds the value of the parse
+/// * `ctx` holds the context of the parse
 #[derive(Debug, Clone)]
 pub struct Success {
     pub val: Vec<String>,
     pub ctx: Context,
 }
 
+/// `Failure` is a failed parse result
+/// * `exp` holds the error message
+/// * `ctx` holds the context of the parse
 #[derive(Debug, Clone)]
 pub struct Failure {
     pub exp: String,
     pub ctx: Context,
 }
 
-pub fn success(ctx: Context, val: Vec<String>) -> Success {
+/// Creates a new `Success` object with the given value and context
+fn success(ctx: Context, val: Vec<String>) -> Success {
     Success { val, ctx }
 }
 
-pub fn failure<S: AsRef<str>>(ctx: Context, exp: S) -> Failure {
+/// Creates a new `Failure` object with the given error message and context
+fn failure<S: AsRef<str>>(ctx: Context, exp: S) -> Failure {
     let exp = exp.as_ref().to_string();
     Failure { exp, ctx }
 }
 
+/// # String parser
+/// Parses for a given target string
+/// ### Arguments
+/// * `target` - The target string to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{string, parse};
+///
+/// let res = parse("Hello World", string("Hello World"));
+/// assert_eq!(res.unwrap().val[0], "Hello World");
+/// ```
 pub fn string<S: AsRef<str>>(target: S) -> Parser {
     let target = target.as_ref().to_string();
 
@@ -47,6 +68,26 @@ pub fn string<S: AsRef<str>>(target: S) -> Parser {
     })
 }
 
+/// # Regex parser
+/// Parses for a given regex pattern
+/// ### Arguments
+/// * `target` - The target regex pattern
+/// * `expected` - A custom error message
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{regex, parse};
+///
+/// let res = parse("+12 345 67890", regex(r"\+\d{2}\s\d{3}\s\d{5}", "Phone number"));
+/// assert_eq!(res.unwrap().val[0], "+12 345 67890");
+///
+/// let res = parse("+12 45 6890", regex(r"\+\d{2}\s\d{3}\s\d{5}", "Phone number"));
+/// assert_eq!(
+///     res.unwrap_err(),
+///     "Parser error, expected 'Phone number' at position '0'"
+/// );
+/// ```
 pub fn regex<A: AsRef<str>, B: AsRef<str>>(target: A, expected: B) -> Parser {
     let target = target.as_ref().to_string();
     let expected = expected.as_ref().to_string();
@@ -71,6 +112,22 @@ pub fn regex<A: AsRef<str>, B: AsRef<str>>(target: A, expected: B) -> Parser {
     })
 }
 
+/// # Optional parser
+/// Tries to parse the given parser, but if it fails, it returns a successful result with an empty value
+/// ### Arguments
+/// * `parser` - The parser to try to parse
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{optional, string, parse};
+///
+/// let res = parse("Hello World", optional(string("Hello World")));
+/// assert_eq!(res.unwrap().val[0], "Hello World".to_string());
+///
+/// let res = parse("Hello World", optional(string("Hallo World")));
+/// assert_eq!(res.unwrap().val[0], String::new());
+/// ```
 pub fn optional(parser: Parser) -> Parser {
     Box::new(move |ctx: Context| {
         let res = parser(ctx.clone());
@@ -83,6 +140,51 @@ pub fn optional(parser: Parser) -> Parser {
     })
 }
 
+/// # Sequence parser
+/// Parses for a sequence of parsers
+/// ### Arguments
+/// * `parsers` - The parsers to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{sequence, string, spaces, parse};
+///
+/// fn main() {
+///     let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
+///     assert_eq!(
+///         res.unwrap().val,
+///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+///     );
+/// }
+/// ```
+#[macro_export]
+macro_rules! sequence {
+    ($($p:expr),+) => {
+        sequence(vec![$($p),*])
+    };
+}
+
+/// # Sequence parser 
+/// Parses for a sequence of parsers
+/// ### Arguments
+/// * `parsers` - The parsers to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{sequence, string, spaces, parse};
+///
+/// fn main() {
+///     let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
+///     assert_eq!(
+///         res.unwrap().val,
+///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+///     );
+/// }
+/// ```
 pub fn sequence(parsers: Vec<Parser>) -> Parser {
     Box::new(move |mut ctx: Context| {
         let mut result = Vec::new();
@@ -100,6 +202,19 @@ pub fn sequence(parsers: Vec<Parser>) -> Parser {
     })
 }
 
+/// # Any parser
+/// Parses for any of the given parsers and returns the first successful result
+/// ### Arguments
+/// * `parsers` - The parsers to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{any, string, parse};
+///
+/// let res = parse("Hello World", any(vec![string("Hallo"), string("Hello")]));
+/// assert_eq!(res.unwrap().val, vec!["Hello".to_string()]);
+/// ```
 pub fn any(parsers: Vec<Parser>) -> Parser {
     Box::new(move |ctx: Context| {
         for parser in parsers.iter() {
@@ -113,10 +228,30 @@ pub fn any(parsers: Vec<Parser>) -> Parser {
     })
 }
 
-pub fn map(
-    parser: Parser,
-    mapper: fn(Vec<String>) -> Result<Vec<String>, String>,
-) -> Parser {
+/// # Map parser
+/// Maps the result of a parser to a new value
+/// ### Arguments
+/// * `parser` - The parser to map
+/// * `mapper` - The function to map the result of the parser
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{map, sequence, string, parse};
+///
+/// fn main() {
+///     let res = parse(
+///         "Hello World",
+///         map(
+///             sequence!(string("Hello"), string(" "), string("World")),
+///             |res| Ok(vec![res.join("")]),
+///         ),
+///     );
+///     assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
+/// }
+/// ```
+pub fn map(parser: Parser, mapper: fn(Vec<String>) -> Result<Vec<String>, String>) -> Parser {
     Box::new(move |ctx: Context| {
         let res = parser(ctx.clone());
         if res.is_err() {
@@ -134,6 +269,14 @@ pub fn map(
     })
 }
 
+/// # Many parser
+/// Parses as many times as possible, returns an error if no parsing was successful
+/// ### Arguments
+/// * `parser` - The parser to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// * Look at the `spaces()` parser implementation for an example
 pub fn many(parser: Parser) -> Parser {
     Box::new(move |mut ctx: Context| {
         let mut ret = Vec::new();
@@ -157,28 +300,112 @@ pub fn many(parser: Parser) -> Parser {
     })
 }
 
+/// # Between parser
+/// Parses between two parsers
+/// ### Arguments
+/// * `front` - The left parser
+/// * `middle` - The parser to parse between the left and right parser
+/// * `back` - The right parser
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{between, string, parse};
+///
+/// let res = parse(
+///     "\"Hello\"",
+///     between(string("\""), string("Hello"), string("\"")),
+/// );
+/// assert_eq!(res.unwrap().val, vec!["Hello"]);
+/// ```
 pub fn between(front: Parser, middle: Parser, back: Parser) -> Parser {
     map(sequence(vec![front, middle, back]), |v| {
         Ok(vec![v[1].clone()])
     })
 }
 
+/// # Spaces parser
+/// Parses for at least one space
+/// # Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{spaces, string, parse, sequence};
+///
+/// fn main() {
+///     let res = parse(
+///         "Hello World",
+///         sequence!(string("Hello"), spaces(), string("World")),
+///     );
+///     assert_eq!(
+///         res.unwrap().val,
+///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+///     );
+/// }
+/// ```
 pub fn spaces() -> Parser {
     return map(many(string(" ")), |s| Ok(vec![s.join("")]));
 }
 
+/// # Letters parser
+/// Parses for at least one letter
+/// # Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{letters, parse};
+///
+/// let res = parse("Hello", letters());
+/// assert_eq!(res.unwrap().val, vec!["Hello"]);
+/// ```
 pub fn letters() -> Parser {
     return regex("[a-zA-Z]+", "letters");
 }
 
+/// # Integer parser
+/// Parses for an integer
+/// # Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{integer, parse};
+///
+/// let res = parse("123", integer());
+/// assert_eq!(res.unwrap().val, vec!["123"]);
+/// ```
 pub fn integer() -> Parser {
     return regex(r"\d+", "integer");
 }
 
+/// # Float parser
+/// Parses for a float
+/// # Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{float, parse};
+///
+/// let res = parse("123.456", float());
+/// assert_eq!(res.unwrap().val, vec!["123.456"]);
+/// ```
 pub fn float() -> Parser {
     return regex(r"\d+\.\d*", "float");
 }
 
+/// Runs a given parser on the context, if fails, returns a custom error message
+/// ### Arguments
+/// * `parser` - The parser to run
+/// * `expected` - The error message
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{string, expect, parse};
+///
+/// let res = parse("Hello World", expect(string("Hello"), "\"Hello\""));
+/// assert_eq!(res.unwrap().val, vec!["Hello"]);
+/// ```
 pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     let expected = expected.as_ref().to_string();
 
@@ -192,6 +419,30 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     })
 }
 
+/// Runs a given parser on a given string.
+/// ### Arguments
+/// * `txt` - the text to parse
+/// * `parser` - The parser to run
+/// ### Returns
+/// * `Result<Success, String>` containing the result of the parser or the error message
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{map, parse, string, spaces, sequence};
+///
+/// fn main() {
+///     let res = parse("Hello World",
+///         map(sequence!(string("Hello"), spaces(), string("World")),
+///             |r| Ok(vec![r.join("")]),
+///         ),
+///     );
+///
+///     assert_eq!(
+///         res.unwrap().val,
+///         vec!["Hello World".to_string()]
+///     );
+/// }
+/// ```
 pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, String> {
     let txt = txt.as_ref().to_string();
 
@@ -261,28 +512,19 @@ mod tests {
 
     #[test]
     fn sequence_test() {
-        let res = parse(
-            "Hello World",
-            sequence(vec![string("Hello"), string(" World")]),
-        );
+        let res = parse("Hello World", sequence!(string("Hello"), string(" World")));
         assert_eq!(
             res.unwrap().val,
             vec!["Hello".to_string(), " World".to_string()]
         );
 
-        let res = parse(
-            "Hello World",
-            sequence(vec![string("Hallo"), string(" World")]),
-        );
+        let res = parse("Hello World", sequence!(string("Hallo"), string(" World")));
         assert_eq!(
             res.unwrap_err(),
             "Parser error, expected 'Hallo' at position '0'"
         );
 
-        let res = parse(
-            "Hello World",
-            sequence(vec![string("Hello"), string("World")]),
-        );
+        let res = parse("Hello World", sequence!(string("Hello"), string("World")));
         assert_eq!(
             res.unwrap_err(),
             "Parser error, expected 'World' at position '5'"
@@ -290,7 +532,7 @@ mod tests {
 
         let res = parse(
             "Hello World",
-            sequence(vec![string("Hello"), string(" "), string("World")]),
+            sequence!(string("Hello"), string(" "), string("World")),
         );
         assert_eq!(
             res.unwrap().val,

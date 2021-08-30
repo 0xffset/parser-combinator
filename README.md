@@ -1,4 +1,4 @@
-# 0xParser
+# ox_parser
 
 Parser Combinator crate.
 
@@ -12,7 +12,7 @@ README is subject to change.
 let res = parse(
 	"Hello World",
 	map(
-		sequence(vec![string("Hello"), spaces(), string("World")]),
+		sequence!(string("Hello"), spaces(), string("World")),
 		|r| Ok(vec![r.join("")]),
 	),
 );
