@@ -1,13 +1,13 @@
 # ox_parser
 
-Parser Combinator crate.
+Parser Combinator crate. (Continuation of the OxParse crate)
 
 #### Info
 
 README is subject to change.
 
 ### How to use
-
+Look at the documentation for more examples.
 ```Rust
 let res = parse(
 	"Hello World",

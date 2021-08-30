@@ -166,7 +166,7 @@ macro_rules! sequence {
     };
 }
 
-/// # Sequence parser 
+/// # Sequence parser
 /// Parses for a sequence of parsers
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
