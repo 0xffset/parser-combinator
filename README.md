@@ -4,10 +4,6 @@ Parser Combinator crate. (Continuation of the OxParse crate)
 
 https://crates.io/crates/ox_parser (https://crates.io/crates/OxParse is deprecated)
 
-#### Docs
-
-https://docs.rs/ox_parser/0.2.1
-
 #### Info
 
 README is subject to change.
