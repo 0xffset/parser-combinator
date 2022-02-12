@@ -173,7 +173,6 @@ macro_rules! sequence {
 /// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
 /// ## Example
 /// ```
-/// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{sequence, string, spaces, parse};
 ///
 /// let res = parse("Hello World", sequence(vec![string("Hello"), spaces(), string("World")]));
@@ -197,6 +196,28 @@ pub fn sequence(parsers: Vec<Parser>) -> Parser {
 
         return Ok(success(ctx, result));
     })
+}
+
+/// # Any parser
+/// Parses for any of the given parsers and returns the first successful result, or an error if no parser matched
+/// Convenience macro, works identical to `any()` but without having to manually create a vector.
+/// ### Arguments
+/// * `parsers` - The parsers to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// #[macro_use] extern crate ox_parser;
+/// use ox_parser::{any, string, parse};
+///
+/// let res = parse("Hello World", any!(string("Hallo"), string("Hello")));
+/// assert_eq!(res.unwrap().val, vec!["Hello".to_string()]);
+/// ```
+#[macro_export]
+macro_rules! any {
+    ($($p:expr),+) => {
+        any(vec![$($p),*])
+    };
 }
 
 /// # Any parser
@@ -235,7 +256,7 @@ pub fn any(parsers: Vec<Parser>) -> Parser {
 /// ## Example
 /// ```
 /// use ox_parser::{either, string, parse};
-/// 
+///
 /// let res = parse("Hello World", either(string("Hallo Welt"), string("Hello World")));
 /// assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
 pub fn either(parser_a: Parser, parser_b: Parser) -> Parser {
@@ -565,10 +586,7 @@ mod tests {
 
         let res = parse(
             "Hello World",
-            sequence(vec![
-                any(vec![string("Hallo"), string("Hola")]),
-                string(" World"),
-            ]),
+            sequence!(any(vec![string("Hallo"), string("Hola")]), string(" World")),
         );
 
         assert_eq!(
