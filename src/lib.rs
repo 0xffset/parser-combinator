@@ -719,7 +719,7 @@ mod tests {
     }
 
     #[test]
-    fn choice_test() {
+    fn either_test() {
         let res = parse(
             "Hello World",
             either(string("Hello World"), string("Hallo Welt")),
