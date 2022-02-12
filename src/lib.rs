@@ -141,7 +141,8 @@ pub fn optional(parser: Parser) -> Parser {
 }
 
 /// # Sequence parser
-/// Parses for a sequence of parsers
+/// Parses for a sequence of parsers.
+/// Convenience macro, works identical to `sequence()` but without having to manually create a vector.
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
 /// ### Returns
@@ -175,7 +176,7 @@ macro_rules! sequence {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{sequence, string, spaces, parse};
 ///
-/// let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
+/// let res = parse("Hello World", sequence(vec![string("Hello"), spaces(), string("World")]));
 /// assert_eq!(
 ///     res.unwrap().val,
 ///     vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
