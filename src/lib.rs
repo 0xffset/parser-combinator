@@ -142,6 +142,7 @@ pub fn optional(parser: Parser) -> Parser {
 
 /// # Sequence parser
 /// Parses for a sequence of parsers.
+///
 /// Convenience macro, works identical to `sequence()` but without having to manually create a vector.
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
@@ -200,6 +201,7 @@ pub fn sequence(parsers: Vec<Parser>) -> Parser {
 
 /// # Any parser
 /// Parses for any of the given parsers and returns the first successful result, or an error if no parser matched
+/// 
 /// Convenience macro, works identical to `any()` but without having to manually create a vector.
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
