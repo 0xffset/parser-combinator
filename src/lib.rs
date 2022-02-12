@@ -64,7 +64,7 @@ pub fn string<S: AsRef<str>>(target: S) -> Parser {
             return Ok(success(ctx, vec![target.clone()]));
         }
 
-        return Err(failure(ctx, target.clone()));
+        return Err(failure(ctx, format!("Expected '{}'", target.clone())));
     })
 }
 
@@ -85,7 +85,7 @@ pub fn string<S: AsRef<str>>(target: S) -> Parser {
 /// let res = parse("+12 45 6890", regex(r"\+\d{2}\s\d{3}\s\d{5}", "Phone number"));
 /// assert_eq!(
 ///     res.unwrap_err(),
-///     "Parser error, expected 'Phone number' at position '0'"
+///     "[Parser error] Expected 'Phone number' at position: '0'"
 /// );
 /// ```
 pub fn regex<A: AsRef<str>, B: AsRef<str>>(target: A, expected: B) -> Parser {
@@ -108,7 +108,7 @@ pub fn regex<A: AsRef<str>, B: AsRef<str>>(target: A, expected: B) -> Parser {
             }
         }
 
-        return Err(failure(ctx, expected.clone()));
+        return Err(failure(ctx, format!("Expected '{}'", expected.clone())));
     })
 }
 
@@ -151,13 +151,11 @@ pub fn optional(parser: Parser) -> Parser {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{sequence, string, spaces, parse};
 ///
-/// fn main() {
-///     let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
-///     assert_eq!(
-///         res.unwrap().val,
-///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
-///     );
-/// }
+/// let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
+/// assert_eq!(
+///     res.unwrap().val,
+///     vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+/// );
 /// ```
 #[macro_export]
 macro_rules! sequence {
@@ -177,13 +175,11 @@ macro_rules! sequence {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{sequence, string, spaces, parse};
 ///
-/// fn main() {
-///     let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
-///     assert_eq!(
-///         res.unwrap().val,
-///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
-///     );
-/// }
+/// let res = parse("Hello World", sequence!(string("Hello"), spaces(), string("World")));
+/// assert_eq!(
+///     res.unwrap().val,
+///     vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+/// );
 /// ```
 pub fn sequence(parsers: Vec<Parser>) -> Parser {
     Box::new(move |mut ctx: Context| {
@@ -203,7 +199,7 @@ pub fn sequence(parsers: Vec<Parser>) -> Parser {
 }
 
 /// # Any parser
-/// Parses for any of the given parsers and returns the first successful result
+/// Parses for any of the given parsers and returns the first successful result, or an error if no parser matched
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
 /// ### Returns
@@ -224,8 +220,25 @@ pub fn any(parsers: Vec<Parser>) -> Parser {
             }
         }
 
-        return Err(failure(ctx, String::from("any()")));
+        return Err(failure(ctx, "No match in any()".to_string()));
     })
+}
+
+/// # Either parser
+/// Parses either of the two given parsers and returns either the first to match or an error if both failed
+/// ### Arguments
+/// * `parser_a` - The first parser to parse for
+/// * `parser_b` - The second parser to parse for
+/// ### Returns
+/// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
+/// ## Example
+/// ```
+/// use ox_parser::{either, string, parse};
+/// 
+/// let res = parse("Hello World", either(string("Hallo Welt"), string("Hello World")));
+/// assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
+pub fn either(parser_a: Parser, parser_b: Parser) -> Parser {
+    any(vec![parser_a, parser_b])
 }
 
 /// # Map parser
@@ -240,16 +253,14 @@ pub fn any(parsers: Vec<Parser>) -> Parser {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{map, sequence, string, parse};
 ///
-/// fn main() {
-///     let res = parse(
-///         "Hello World",
-///         map(
-///             sequence!(string("Hello"), string(" "), string("World")),
-///             |res| Ok(vec![res.join("")]),
-///         ),
-///     );
-///     assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
-/// }
+/// let res = parse(
+///     "Hello World",
+///     map(
+///         sequence!(string("Hello"), string(" "), string("World")),
+///         |res| Ok(vec![res.join("")]),
+///     ),
+/// );
+/// assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
 /// ```
 pub fn map(parser: Parser, mapper: fn(Vec<String>) -> Result<Vec<String>, String>) -> Parser {
     Box::new(move |ctx: Context| {
@@ -325,7 +336,7 @@ pub fn between(front: Parser, middle: Parser, back: Parser) -> Parser {
 }
 
 /// # Spaces parser
-/// Parses for at least one space
+/// Parses for at least one and as many spaces as possible
 /// # Returns
 /// * A parser that can be used in other parsers or directly ran in the `parse(...)` function
 /// ## Example
@@ -333,16 +344,14 @@ pub fn between(front: Parser, middle: Parser, back: Parser) -> Parser {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{spaces, string, parse, sequence};
 ///
-/// fn main() {
-///     let res = parse(
-///         "Hello World",
-///         sequence!(string("Hello"), spaces(), string("World")),
-///     );
-///     assert_eq!(
-///         res.unwrap().val,
-///         vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
-///     );
-/// }
+/// let res = parse(
+///     "Hello World",
+///     sequence!(string("Hello"), spaces(), string("World")),
+/// );
+/// assert_eq!(
+///     res.unwrap().val,
+///     vec!["Hello".to_string(), " ".to_string(), "World".to_string()]
+/// );
 /// ```
 pub fn spaces() -> Parser {
     return map(many(string(" ")), |s| Ok(vec![s.join("")]));
@@ -403,8 +412,8 @@ pub fn float() -> Parser {
 /// ```
 /// use ox_parser::{string, expect, parse};
 ///
-/// let res = parse("Hello World", expect(string("Hello"), "\"Hello\""));
-/// assert_eq!(res.unwrap().val, vec!["Hello"]);
+/// let res = parse("Hallo Welt", expect(string("Hello World"), "Expected \"Hello World\""));
+/// assert_eq!(res.unwrap_err(), "[Parser error] Expected \"Hello World\" at position: '0'");
 /// ```
 pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     let expected = expected.as_ref().to_string();
@@ -430,18 +439,16 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
 /// #[macro_use] extern crate ox_parser;
 /// use ox_parser::{map, parse, string, spaces, sequence};
 ///
-/// fn main() {
-///     let res = parse("Hello World",
-///         map(sequence!(string("Hello"), spaces(), string("World")),
-///             |r| Ok(vec![r.join("")]),
-///         ),
-///     );
+/// let res = parse("Hello World",
+///     map(sequence!(string("Hello"), spaces(), string("World")),
+///         |r| Ok(vec![r.join("")]),
+///     ),
+/// );
 ///
-///     assert_eq!(
-///         res.unwrap().val,
-///         vec!["Hello World".to_string()]
-///     );
-/// }
+/// assert_eq!(
+///     res.unwrap().val,
+///     vec!["Hello World".to_string()]
+/// );
 /// ```
 pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, String> {
     let txt = txt.as_ref().to_string();
@@ -450,7 +457,7 @@ pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, String> {
     if res.is_err() {
         let res = res.unwrap_err();
         return Err(format!(
-            "Parser error, expected '{}' at position '{}'",
+            "[Parser error] {} at position: '{}'",
             res.exp, res.ctx.pos
         ));
     }
@@ -470,13 +477,13 @@ mod tests {
         let res = parse("Hello World", string("Hallo World"));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'Hallo World' at position '0'"
+            "[Parser error] Expected 'Hallo World' at position: '0'"
         );
 
         let res = parse("My Hello World", string("Hello World"));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'Hello World' at position '0'"
+            "[Parser error] Expected 'Hello World' at position: '0'"
         );
     }
 
@@ -488,7 +495,7 @@ mod tests {
         let res = parse("DE012 2322 2323", regex(r"DE\d{4}\s\d{4}\s\d{4}", "IBAN"));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'IBAN' at position '0'"
+            "[Parser error] Expected 'IBAN' at position: '0'"
         );
 
         let res = parse(
@@ -497,7 +504,7 @@ mod tests {
         );
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'IBAN' at position '0'"
+            "[Parser error] Expected 'IBAN' at position: '0'"
         );
     }
 
@@ -521,13 +528,13 @@ mod tests {
         let res = parse("Hello World", sequence!(string("Hallo"), string(" World")));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'Hallo' at position '0'"
+            "[Parser error] Expected 'Hallo' at position: '0'"
         );
 
         let res = parse("Hello World", sequence!(string("Hello"), string("World")));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'World' at position '5'"
+            "[Parser error] Expected 'World' at position: '5'"
         );
 
         let res = parse(
@@ -565,7 +572,7 @@ mod tests {
 
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'any()' at position '0'"
+            "[Parser error] No match in any() at position: '0'"
         );
     }
 
@@ -584,12 +591,12 @@ mod tests {
             "Hello World",
             map(
                 sequence(vec![string("Hello"), string(" "), string("World")]),
-                |_| Err("mapping()".to_string()),
+                |_| Err("Expected 'mapping()'".to_string()),
             ),
         );
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'mapping()' at position '11'"
+            "[Parser error] Expected 'mapping()' at position: '11'"
         );
     }
 
@@ -601,7 +608,7 @@ mod tests {
         let res = parse("Hello World", many(regex(r"\d{1}", "number")));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'number' at position '0'"
+            "[Parser error] Expected 'number' at position: '0'"
         );
     }
 
@@ -625,7 +632,7 @@ mod tests {
         );
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected '\"' at position '6'"
+            "[Parser error] Expected '\"' at position: '6'"
         );
     }
 
@@ -647,7 +654,7 @@ mod tests {
         );
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected ' ' at position '5'"
+            "[Parser error] Expected ' ' at position: '5'"
         );
 
         let res = parse(
@@ -671,7 +678,7 @@ mod tests {
         let res = parse("1Hello", letters());
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'letters' at position '0'"
+            "[Parser error] Expected 'letters' at position: '0'"
         );
     }
 
@@ -683,7 +690,7 @@ mod tests {
         let res = parse("a123456789", integer());
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'integer' at position '0'"
+            "[Parser error] Expected 'integer' at position: '0'"
         );
     }
 
@@ -695,7 +702,7 @@ mod tests {
         let res = parse("a1234.56789", float());
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected 'float' at position '0'"
+            "[Parser error] Expected 'float' at position: '0'"
         );
     }
 
@@ -704,10 +711,28 @@ mod tests {
         let res = parse("Hello World", expect(string("Hello"), "\"Hello\""));
         assert_eq!(res.unwrap().val, vec!["Hello"]);
 
-        let res = parse("Hello World", expect(string("Hallo"), "\"Hallo\""));
+        let res = parse("Hello World", expect(string("Hallo"), "Expected \"Hallo\""));
         assert_eq!(
             res.unwrap_err(),
-            "Parser error, expected '\"Hallo\"' at position '0'"
+            "[Parser error] Expected \"Hallo\" at position: '0'"
+        );
+    }
+
+    #[test]
+    fn choice_test() {
+        let res = parse(
+            "Hello World",
+            either(string("Hello World"), string("Hallo Welt")),
+        );
+        assert_eq!(res.unwrap().val, vec!["Hello World"]);
+
+        let res = parse(
+            "Hola mundo",
+            either(string("Hello World"), string("Hallo Welt")),
+        );
+        assert_eq!(
+            res.unwrap_err(),
+            "[Parser error] No match in any() at position: '0'"
         );
     }
 }
