@@ -1,9 +1,8 @@
 #![allow(unused_macros)]
-
-use crate::string_utils::StringUtils;
 use regex::Regex;
 
-pub mod string_utils;
+mod string_utils;
+use crate::string_utils::StringUtils;
 
 pub type Parser = Box<dyn Fn(Context) -> Result<Success, Failure>>;
 
@@ -56,6 +55,7 @@ fn failure<S: AsRef<str>>(ctx: Context, exp: S) -> Failure {
 /// assert_eq!(res.unwrap().val[0], "Hello World");
 /// ```
 pub fn string<S: AsRef<str>>(target: S) -> Parser {
+
     let target = target.as_ref().to_string();
 
     Box::new(move |mut ctx: Context| {
@@ -201,7 +201,7 @@ pub fn sequence(parsers: Vec<Parser>) -> Parser {
 
 /// # Any parser
 /// Parses for any of the given parsers and returns the first successful result, or an error if no parser matched
-/// 
+///
 /// Convenience macro, works identical to `any()` but without having to manually create a vector.
 /// ### Arguments
 /// * `parsers` - The parsers to parse for
