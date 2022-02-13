@@ -4,11 +4,17 @@ use regex::Regex;
 mod string_utils;
 use crate::string_utils::StringUtils;
 
-pub type Parser = Box<dyn Fn(Context) -> Result<Success, Failure>>;
+/// Internal parser type
+type Parser = Box<dyn Fn(Context) -> Result<Success, Failure>>;
 
+/// Parser context
+/// * `txt` - input string
+/// * `pos` - current position in input string
 #[derive(Debug, Clone)]
 pub struct Context {
+    /// Current input string
     pub txt: String,
+    /// Current position in input string
     pub pos: usize,
 }
 
@@ -17,7 +23,9 @@ pub struct Context {
 /// * `ctx` holds the context of the parse
 #[derive(Debug, Clone)]
 pub struct Success {
+    /// Value of the parse
     pub val: Vec<String>,
+    /// Context of the parse
     pub ctx: Context,
 }
 
@@ -26,7 +34,9 @@ pub struct Success {
 /// * `ctx` holds the context of the parse
 #[derive(Debug, Clone)]
 pub struct Failure {
+    /// Error message
     pub exp: String,
+    /// Context of the parse
     pub ctx: Context,
 }
 
