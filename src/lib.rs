@@ -5,7 +5,7 @@ mod string_utils;
 use crate::string_utils::StringUtils;
 
 /// Internal parser type
-type Parser = Box<dyn Fn(Context) -> Result<Success, Failure>>;
+pub type Parser = Box<dyn Fn(Context) -> Result<Success, Failure>>;
 
 /// Parser context
 /// * `txt` - input string
