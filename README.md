@@ -1,8 +1,6 @@
 # ox_parser
 
-Parser Combinator crate. (Continuation of the OxParse crate)
-
-https://crates.io/crates/ox_parser (https://crates.io/crates/OxParse is deprecated)
+Parser Combinator crate. Provides a simple parser combinator library for Rust.
 
 #### Info
 
