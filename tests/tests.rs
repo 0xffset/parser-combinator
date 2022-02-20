@@ -110,7 +110,7 @@ fn map_test() {
         "Hello World",
         map(
             sequence(vec![string("Hello"), string(" "), string("World")]),
-            |res| Ok(vec![res.join("")]),
+            |res| Ok(vec![res.val.join("")]),
         ),
     );
     assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);

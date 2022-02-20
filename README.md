@@ -13,7 +13,7 @@ let res = parse(
 	"Hello World",
 	map(
 		sequence!(string("Hello"), spaces(), string("World")),
-		|r| Ok(vec![r.join("")]),
+		|r| Ok(vec![r.val.join("")]),
 	),
 );
 

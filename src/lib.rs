@@ -295,12 +295,12 @@ pub fn either(parser_a: Parser, parser_b: Parser) -> Parser {
 ///     "Hello World",
 ///     map(
 ///         sequence!(string("Hello"), string(" "), string("World")),
-///         |res| Ok(vec![res.join("")]),
+///         |res| Ok(vec![res.val.join("")]),
 ///     ),
 /// );
 /// assert_eq!(res.unwrap().val, vec!["Hello World".to_string()]);
 /// ```
-pub fn map(parser: Parser, mapper: fn(Vec<String>) -> Result<Vec<String>, String>) -> Parser {
+pub fn map(parser: Parser, mapper: fn(Success) -> Result<Vec<String>, String>) -> Parser {
     Box::new(move |ctx: Context| {
         let res = parser(ctx.clone());
         if res.is_err() {
@@ -308,8 +308,8 @@ pub fn map(parser: Parser, mapper: fn(Vec<String>) -> Result<Vec<String>, String
         }
         let res = res.unwrap();
 
-        let ctx = res.ctx;
-        let new_res = mapper(res.val);
+        let ctx = res.clone().ctx;
+        let new_res = mapper(res);
         if new_res.is_ok() {
             return Ok(success(ctx, new_res.unwrap()));
         }
@@ -369,7 +369,7 @@ pub fn many(parser: Parser) -> Parser {
 /// ```
 pub fn between(front: Parser, middle: Parser, back: Parser) -> Parser {
     map(sequence(vec![front, middle, back]), |v| {
-        Ok(vec![v[1].clone()])
+        Ok(vec![v.val[1].clone()])
     })
 }
 
@@ -392,7 +392,7 @@ pub fn between(front: Parser, middle: Parser, back: Parser) -> Parser {
 /// );
 /// ```
 pub fn spaces() -> Parser {
-    return map(many(string(" ")), |s| Ok(vec![s.join("")]));
+    return map(many(string(" ")), |s| Ok(vec![s.val.join("")]));
 }
 
 /// # Letters parser
@@ -479,7 +479,7 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
 ///
 /// let res = parse("Hello World",
 ///     map(sequence!(string("Hello"), spaces(), string("World")),
-///         |r| Ok(vec![r.join("")]),
+///         |r| Ok(vec![r.val.join("")]),
 ///     ),
 /// );
 ///
