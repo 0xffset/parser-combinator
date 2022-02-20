@@ -1,6 +1,6 @@
 # ox_parser
 
-Parser Combinator crate. Provides a simple parser combinator library for Rust.
+Parser Combinator crate. Provides a simple parser crate library for Rust.
 
 #### Info
 
