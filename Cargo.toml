@@ -1,10 +1,10 @@
 [package]
 name = "ox_parser"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2018"
 
 license = "MIT"
-description = "Parser combinator crate. Provides a simple parser combinator library for Rust."
+description = "Parser combinator crate. Provides a simple parser combinator crate for Rust."
 repository = "https://github.com/0xffset/parser-combinator"
 readme = "README.md"
 

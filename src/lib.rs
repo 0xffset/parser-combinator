@@ -142,7 +142,7 @@ pub fn optional(parser: Parser) -> Parser {
         let res = parser(ctx.clone());
 
         if res.is_err() {
-            return Ok(success(res.unwrap_err().ctx, vec![String::new()]));
+            return Ok(success(ctx, vec![String::new()]));
         }
 
         return Ok(res.unwrap());
