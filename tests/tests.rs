@@ -100,7 +100,7 @@ fn any_test() {
 
     assert_eq!(
         res.unwrap_err(),
-        "[Parser error] No match in any() at position: '0'"
+        "[Parser error] Expected any of ['Hallo', 'Hola'] at position: '0'"
     );
 }
 
@@ -119,7 +119,7 @@ fn map_test() {
         "Hello World",
         map(
             sequence(vec![string("Hello"), string(" "), string("World")]),
-            |_| Err("Expected 'mapping()'".to_string()),
+            |_| Err("'mapping()'".to_string()),
         ),
     );
     assert_eq!(
@@ -239,7 +239,7 @@ fn expect_test() {
     let res = parse("Hello World", expect(string("Hello"), "\"Hello\""));
     assert_eq!(res.unwrap().val, vec!["Hello"]);
 
-    let res = parse("Hello World", expect(string("Hallo"), "Expected \"Hallo\""));
+    let res = parse("Hello World", expect(string("Hallo"), "\"Hallo\""));
     assert_eq!(
         res.unwrap_err(),
         "[Parser error] Expected \"Hallo\" at position: '0'"
@@ -260,6 +260,6 @@ fn either_test() {
     );
     assert_eq!(
         res.unwrap_err(),
-        "[Parser error] No match in any() at position: '0'"
+        "[Parser error] Expected any of ['Hello World', 'Hallo Welt'] at position: '0'"
     );
 }

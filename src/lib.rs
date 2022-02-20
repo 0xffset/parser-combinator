@@ -74,7 +74,7 @@ pub fn string<S: AsRef<str>>(target: S) -> Parser {
             return Ok(success(ctx, vec![target.clone()]));
         }
 
-        return Err(failure(ctx, format!("Expected '{}'", target.clone())));
+        return Err(failure(ctx, format!("'{}'", target.clone())));
     })
 }
 
@@ -118,7 +118,7 @@ pub fn regex<A: AsRef<str>, B: AsRef<str>>(target: A, expected: B) -> Parser {
             }
         }
 
-        return Err(failure(ctx, format!("Expected '{}'", expected.clone())));
+        return Err(failure(ctx, format!("'{}'", expected.clone())));
     })
 }
 
@@ -247,14 +247,18 @@ macro_rules! any {
 /// ```
 pub fn any(parsers: Vec<Parser>) -> Parser {
     Box::new(move |ctx: Context| {
+        let mut errs = Vec::new();
+
         for parser in parsers.iter() {
             let res = parser(ctx.clone());
             if res.is_ok() {
                 return res;
+            } else {
+                errs.push(res.unwrap_err().exp)
             }
         }
 
-        return Err(failure(ctx, "No match in any()".to_string()));
+        return Err(failure(ctx, format!("any of [{}]", errs.join(", "))));
     })
 }
 
@@ -446,7 +450,7 @@ pub fn float() -> Parser {
 /// ```
 /// use ox_parser::{string, expect, parse};
 ///
-/// let res = parse("Hallo Welt", expect(string("Hello World"), "Expected \"Hello World\""));
+/// let res = parse("Hallo Welt", expect(string("Hello World"), "\"Hello World\""));
 /// assert_eq!(res.unwrap_err(), "[Parser error] Expected \"Hello World\" at position: '0'");
 /// ```
 pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
@@ -491,7 +495,7 @@ pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, String> {
     if res.is_err() {
         let res = res.unwrap_err();
         return Err(format!(
-            "[Parser error] {} at position: '{}'",
+            "[Parser error] Expected {} at position: '{}'",
             res.exp, res.ctx.pos
         ));
     }
