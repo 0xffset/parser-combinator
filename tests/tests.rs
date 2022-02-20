@@ -242,7 +242,7 @@ fn expect_test() {
     let res = parse("Hello World", expect(string("Hallo"), "\"Hallo\""));
     assert_eq!(
         res.unwrap_err(),
-        "[Parser error] Expected \"Hallo\" at position: '0'"
+        "[Parser error] Expected '\"Hallo\"' at position: '0'"
     );
 }
 

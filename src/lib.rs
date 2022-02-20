@@ -451,7 +451,7 @@ pub fn float() -> Parser {
 /// use ox_parser::{string, expect, parse};
 ///
 /// let res = parse("Hallo Welt", expect(string("Hello World"), "\"Hello World\""));
-/// assert_eq!(res.unwrap_err(), "[Parser error] Expected \"Hello World\" at position: '0'");
+/// assert_eq!(res.unwrap_err(), "[Parser error] Expected '\"Hello World\"' at position: '0'");
 /// ```
 pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     let expected = expected.as_ref().to_string();
@@ -459,7 +459,7 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     Box::new(move |ctx: Context| {
         let res = parser(ctx.clone());
         if res.is_err() {
-            return Err(failure(res.unwrap_err().ctx, expected.clone()));
+            return Err(failure(res.unwrap_err().ctx, format!("'{}'", expected.clone())));
         }
 
         return res;
