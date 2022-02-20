@@ -65,7 +65,6 @@ fn failure<S: AsRef<str>>(ctx: Context, exp: S) -> Failure {
 /// assert_eq!(res.unwrap().val[0], "Hello World");
 /// ```
 pub fn string<S: AsRef<str>>(target: S) -> Parser {
-
     let target = target.as_ref().to_string();
 
     Box::new(move |mut ctx: Context| {
@@ -94,7 +93,7 @@ pub fn string<S: AsRef<str>>(target: S) -> Parser {
 ///
 /// let res = parse("+12 45 6890", regex(r"\+\d{2}\s\d{3}\s\d{5}", "Phone number"));
 /// assert_eq!(
-///     res.unwrap_err(),
+///     res.unwrap_err().exp,
 ///     "[Parser error] Expected 'Phone number' at position: '0'"
 /// );
 /// ```
@@ -451,7 +450,7 @@ pub fn float() -> Parser {
 /// use ox_parser::{string, expect, parse};
 ///
 /// let res = parse("Hallo Welt", expect(string("Hello World"), "\"Hello World\""));
-/// assert_eq!(res.unwrap_err(), "[Parser error] Expected '\"Hello World\"' at position: '0'");
+/// assert_eq!(res.unwrap_err().exp, "[Parser error] Expected '\"Hello World\"' at position: '0'");
 /// ```
 pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     let expected = expected.as_ref().to_string();
@@ -459,7 +458,10 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
     Box::new(move |ctx: Context| {
         let res = parser(ctx.clone());
         if res.is_err() {
-            return Err(failure(res.unwrap_err().ctx, format!("'{}'", expected.clone())));
+            return Err(failure(
+                res.unwrap_err().ctx,
+                format!("'{}'", expected.clone()),
+            ));
         }
 
         return res;
@@ -488,16 +490,19 @@ pub fn expect<S: AsRef<str>>(parser: Parser, expected: S) -> Parser {
 ///     vec!["Hello World".to_string()]
 /// );
 /// ```
-pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, String> {
+pub fn parse<S: AsRef<str>>(txt: S, parser: Parser) -> Result<Success, Failure> {
     let txt = txt.as_ref().to_string();
 
     let res = parser(Context { txt, pos: 0 });
     if res.is_err() {
         let res = res.unwrap_err();
-        return Err(format!(
-            "[Parser error] Expected {} at position: '{}'",
-            res.exp, res.ctx.pos
-        ));
+        return Err(Failure {
+            exp: format!(
+                "[Parser error] Expected {} at position: '{}'",
+                res.exp, res.ctx.pos
+            ),
+            ctx: res.ctx,
+        });
     }
 
     return Ok(res.unwrap());

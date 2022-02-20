@@ -7,13 +7,13 @@ fn string_test() {
 
     let res = parse("Hello World", string("Hallo World"));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'Hallo World' at position: '0'"
     );
 
     let res = parse("My Hello World", string("Hello World"));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'Hello World' at position: '0'"
     );
 }
@@ -25,7 +25,7 @@ fn regex_test() {
 
     let res = parse("DE012 2322 2323", regex(r"DE\d{4}\s\d{4}\s\d{4}", "IBAN"));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'IBAN' at position: '0'"
     );
 
@@ -34,7 +34,7 @@ fn regex_test() {
         regex(r"DE\d{4}\s\d{4}\s\d{4}", "IBAN"),
     );
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'IBAN' at position: '0'"
     );
 }
@@ -58,13 +58,13 @@ fn sequence_test() {
 
     let res = parse("Hello World", sequence!(string("Hallo"), string(" World")));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'Hallo' at position: '0'"
     );
 
     let res = parse("Hello World", sequence!(string("Hello"), string("World")));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'World' at position: '5'"
     );
 
@@ -99,7 +99,7 @@ fn any_test() {
     );
 
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected any of ['Hallo', 'Hola'] at position: '0'"
     );
 }
@@ -123,7 +123,7 @@ fn map_test() {
         ),
     );
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'mapping()' at position: '11'"
     );
 }
@@ -135,7 +135,7 @@ fn many_test() {
 
     let res = parse("Hello World", many(regex(r"\d{1}", "number")));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'number' at position: '0'"
     );
 }
@@ -159,7 +159,7 @@ fn between_test() {
         between(string("\""), string("Hello"), string("\"")),
     );
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected '\"' at position: '6'"
     );
 }
@@ -181,7 +181,7 @@ fn spaces_test() {
         sequence(vec![string("Hello"), spaces(), string("World")]),
     );
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected ' ' at position: '5'"
     );
 
@@ -205,7 +205,7 @@ fn letters_test() {
 
     let res = parse("1Hello", letters());
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'letters' at position: '0'"
     );
 }
@@ -217,7 +217,7 @@ fn integer_test() {
 
     let res = parse("a123456789", integer());
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'integer' at position: '0'"
     );
 }
@@ -229,7 +229,7 @@ fn float_test() {
 
     let res = parse("a1234.56789", float());
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected 'float' at position: '0'"
     );
 }
@@ -241,7 +241,7 @@ fn expect_test() {
 
     let res = parse("Hello World", expect(string("Hallo"), "\"Hallo\""));
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected '\"Hallo\"' at position: '0'"
     );
 }
@@ -259,7 +259,7 @@ fn either_test() {
         either(string("Hello World"), string("Hallo Welt")),
     );
     assert_eq!(
-        res.unwrap_err(),
+        res.unwrap_err().exp,
         "[Parser error] Expected any of ['Hello World', 'Hallo Welt'] at position: '0'"
     );
 }
